@@ -1,0 +1,78 @@
+{
+  "name": "fingureprint",
+  "version": "1.0.0",
+  "description": "Attendance management system for university of Mosul",
+  "main": "main.js",
+  "dependencies": {
+    "@databases/sqlite": "^3.0.0",
+    "bcryptjs": "^2.4.3",
+    "better-sqlite3": "^7.4.3",
+    "body-parser": "^1.19.0",
+    "cors": "^2.8.5",
+    "dotenv": "^9.0.0",
+    "electron-squirrel-startup": "^1.0.0",
+    "express": "^4.17.1",
+    "express-fileupload": "^1.2.1",
+    "jsonwebtoken": "^8.5.1",
+    "mongoose": "^5.12.7",
+    "nconf": "^0.11.3",
+    "node-zklib": "^1.3.0",
+    "nodemon": "^2.0.7",
+    "sqlite3": "^5.0.2",
+    "validator": "^13.6.0"
+  },
+  "devDependencies": {
+    "@electron-forge/cli": "^6.0.0-beta.59",
+    "@electron-forge/maker-deb": "^6.0.0-beta.59",
+    "@electron-forge/maker-rpm": "^6.0.0-beta.59",
+    "@electron-forge/maker-squirrel": "^6.0.0-beta.59",
+    "@electron-forge/maker-zip": "^6.0.0-beta.59",
+    "electron": "^13.1.9",
+    "electron-packager": "^15.3.0",
+    "electron-reload": "^2.0.0-alpha.1"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev": "nodemon ./server.js localhost 3000",
+    "make": "electron-forge make",
+    "start": "electron-forge start",
+    "package": "electron-forge package"
+  },
+  "author": "Ibrahim Jameel Mujhid",
+  "license": "ISC",
+  "config": {
+    "forge": {
+      "packagerConfig": {
+        "icon": "icon.ico"
+      },
+      "makers": [
+        {
+          "name": "@electron-forge/maker-squirrel",
+          "config": {
+            "exe": "fingureprint.exe",
+            "name": "com.fingureprint.app",
+            "noMsi": true,
+            "owners": "جامعة الموصل",
+            "setupExe": "fingureprint-setup.exe",
+            "setupMsi": "fingureprint-setup.msi",
+            "setupIcon": "icon.ico"
+          }
+        },
+        {
+          "name": "@electron-forge/maker-zip",
+          "platforms": [
+            "darwin"
+          ]
+        },
+        {
+          "name": "@electron-forge/maker-deb",
+          "config": {}
+        },
+        {
+          "name": "@electron-forge/maker-rpm",
+          "config": {}
+        }
+      ]
+    }
+  }
+}
