@@ -33,6 +33,13 @@ router.post('/importDatabase',async(req, res) => {
 router.post('/importConfigs',async(req, res) => {
     try{
         fs.writeFileSync(configPath,req.files.File.data)
+        nconf.file({file:configPath})
+        nconf.set('office:TimePeriod',{
+            "inTime": "08:30",
+            "outTime": "14:30",
+            "ThuresDay": "13:30"
+          })
+        nconf.save();
         res.status(200).json();
     } catch (e) { 
         res.status(400).send({error:e.message})

@@ -2,6 +2,7 @@
 @import './headers/header.scss';
 @import './fonts/fonts.scss';
 @import './layout/layout.scss';
+@import './layout/card.scss';
 @import './spaces/spaces.scss';
 
 textarea:focus, 
@@ -31,4 +32,8 @@ a{
       transition: all ease 0.1s;
 
   }
+}
+
+.fa-spinner{
+  color:green;
 }

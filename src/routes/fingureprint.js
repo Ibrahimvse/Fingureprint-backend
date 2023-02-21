@@ -3,8 +3,10 @@ const ZKLib = require('node-zklib');
 const nconf = require('nconf');
 const router = new express.Router();
 const Database = require('better-sqlite3');
+var zk= require('Zklib-js')
 const path=require('path');
 const databasePath=path.resolve(__dirname,'..\\..')+'\\database.db'
+const configPath=path.resolve(__dirname,'..\\..')+'\\config.json'
 function msToTime(duration) {
     var milliseconds = parseInt((duration % 1000) / 100),
         seconds = Math.floor((duration / 1000) % 60),
@@ -22,6 +24,13 @@ function setDepartment(user) {
     if(user.unit!='') department=department+" / "+user.unit;
     return department;
 }
+function resetDate(stringDate){
+    var date=new Date(stringDate)
+    date.setHours(0)
+    date.setMinutes(0)
+    date.setSeconds(0)
+    return date;
+}
 function decodeName(name) {
     const encoded = "VYRfIlQDAFX_cdJGaHmSTOLMNeZ[]^KUPBECYzYrYvYqYuYpYsYx";
     const decoded = "ضظزوةىرؤءئطكمنتالبيسشدجحخهعغفقثصذآإأظْظٍظِظٌظُظًظَظّ";
@@ -29,6 +38,18 @@ function decodeName(name) {
         const index = encoded.indexOf(character);
         if (index > -1) {
             return decoded[index];
+        }
+        return character;
+    }).join('');
+}
+
+function encodeName(name) {
+    const encoded = "VYRfIlQDAFX_cdJGaHmSTOLMNeZ[]^KUPBECYzYrYvYqYuYpYsYx";
+    const decoded = "ضظزوةىرؤءئطكمنتالبيسشدجحخهعغفقثصذآإأظْظٍظِظٌظُظًظَظّ";
+    return name.split('').map(character => {
+        const index = decoded.indexOf(character);
+        if (index > -1) {
+            return encoded[index];
         }
         return character;
     }).join('');
@@ -79,6 +100,31 @@ var getDeviceLogs = async function (ip) {
         return logs;
     }
 }
+
+router.post('/device/addUserToDevice', async (req, res) => {
+    var  devices=req.body.devices;
+    var user =req.body.user;
+    var users = [];
+    try{ 
+        for (var d of devices) {
+            var deviceUsers = await getDeviceUsers(d.ip);
+            var filterdUsers = deviceUsers.filter((user) =>(users.findIndex((u)=>u.id===user.id) < 0)==true)
+            users = users.concat(filterdUsers);
+        }
+        var id=Math.max.apply(Math, users.map(function(user) { return user.id; }))+1;
+        for (var d of devices) {
+            //var zkInstance = await createZkInstance(ip);
+            
+            let zkInstance = new zk(d.ip, 4370, 5200, 5000);
+            await zkInstance.createSocket()
+            await zkInstance.setUser(id,id,encodeName(user.name),'1000',0,0)
+            res.status(200).json(user)
+        }
+        
+    }catch(e){
+        console.log(e)
+    }
+});
 var calculateMonthlyAbsense = async (users, validRecords) => {
     var results = [];
     var TimePeriod=await findInOutTime();
@@ -97,9 +143,13 @@ var calculateMonthlyAbsense = async (users, validRecords) => {
             var dayRecords = userRecords.filter(record => record.record.date == item);
             var userIn = dayRecords[0].record.recordTime;
             var userOut = dayRecords[dayRecords.length - 1].record.recordTime;
-            var day=new Date(item).getDay();
-            if(day==4) outTime = cuurentDate.setTime(TimePeriod.outTime-60000);
-            else outTime = cuurentDate.setTime(TimePeriod.outTime);
+            var day=dayRecords[0].record.day;
+            if(day==4){
+                outTime = cuurentDate.setTime(TimePeriod.ThuresDay);
+            } 
+            else{
+                outTime = cuurentDate.setTime(TimePeriod.outTime);
+            } 
             userIn = (userIn.getHours() * 3600 + userIn.getMinutes() * 60) * 1000;
             userOut = (userOut.getHours() * 3600 + userOut.getMinutes() * 60) * 1000;
             if ((userOut - userIn) <= 600000) {
@@ -111,7 +161,7 @@ var calculateMonthlyAbsense = async (users, validRecords) => {
                 }
             } else {
                 if (userIn > inTime) total = total + (userIn - inTime);
-                else if (userOut < outTime) total = total + (outTime - userOut);
+                if (userOut < outTime) total = total + (outTime - userOut);
             }
         }
         var size = set.size;
@@ -130,15 +180,18 @@ var calculateMonthlyAbsense = async (users, validRecords) => {
 }
 
 var findInOutTime=async()=>{
-    const fingureprintoffice = await nconf.file({ file: 'config.json' }).get('office')
+    const fingureprintoffice = await nconf.file({ file:configPath}).get('office')
     var jsonTimePeriod=fingureprintoffice.TimePeriod;
     var intime=jsonTimePeriod.inTime.split(':');
     var outtime=jsonTimePeriod.outTime.split(':');
+    var thuresday=jsonTimePeriod.ThuresDay.split(':');
     var inTime=(+intime[0]*3600000)+(+intime[1]*60*1000)
     var outTime=(+outtime[0]*3600000)+(+outtime[1]*60*1000)
+    var ThuresDay=(+thuresday[0]*3600000)+(+thuresday[1]*60*1000)
     var TimePeriod={
         inTime:inTime,
-        outTime:outTime
+        outTime:outTime,
+        ThuresDay:ThuresDay
     }
     return TimePeriod;
 }
@@ -150,7 +203,7 @@ var calculateDailyAbsense = async (users, validRecords, day,report_type) => {
     var inTime = cuurentDate.setTime(TimePeriod.inTime);
     var midTime = cuurentDate.setTime(11 * 3600 * 1000);
     var outTime = cuurentDate.setTime(TimePeriod.outTime);
-    if (day == 4) outTime = cuurentDate.setTime(outTime-60000);
+    if (day == 4) outTime = cuurentDate.setTime(TimePeriod.ThuresDay);
     for (var user of users) {
         var userRecords = validRecords.filter(item => item.id == user.id);
         var total = 0;
@@ -177,7 +230,7 @@ var calculateDailyAbsense = async (users, validRecords, day,report_type) => {
                 input = msToTime(userIn);
                 output = msToTime(userOut);
                 if (userIn > inTime && report_type!='out') total = total + (userIn - inTime);
-                else if (userOut < outTime && report_type!='in') total = total + (outTime - userOut);
+                if (userOut < outTime && report_type!='in') total = total + (outTime - userOut);
             }
         }
         results.push({
@@ -213,8 +266,8 @@ var calculateEmployeeReport = async (user, userRecords) => {
             var total = 0;
             var input = '-- غائب --';
             var output = '-- غائب --';
-            var day=new Date(item).getDay();
-            if(day==4) outTime = cuurentDate.setTime(TimePeriod.outTime-60000);
+
+            if(dayRecords[0].record.day==4) outTime = cuurentDate.setTime(TimePeriod.ThuresDay);
             else outTime = cuurentDate.setTime(TimePeriod.outTime);
             if ((userOut - userIn) <= 600000) {
                 if (userIn < midTime) {
@@ -229,7 +282,7 @@ var calculateEmployeeReport = async (user, userRecords) => {
                 input = msToTime(userIn);
                 output = msToTime(userOut);
                 if (userIn > inTime ) total = total + (userIn - inTime);
-                else if (userOut < outTime) total = total + (outTime - userOut);
+                if (userOut < outTime) total = total + (outTime - userOut);
             }
 
             results.push({
@@ -276,6 +329,7 @@ router.post('/device/logs', async (req, res) => {
     }
 })
 
+
 router.post('/device/downloadUsers', async (req, res) => {
     var users = [];
     try {
@@ -307,9 +361,13 @@ router.post('/fingureprintoffice/monthlyreport', async (req, res) => {
     try {
         for (var d of req.body.devices) {
             logs = logs.concat(await getDeviceLogs(d.ip))
+        }a
+        var start = resetDate(req.body.dates.start);
+        var end = resetDate(req.body.dates.end);
+        if(req.body.dates.start==req.body.dates.end){
+            end.setDate(end.getDate()+1)
         }
-        var start = new Date(req.body.dates.start);
-        var end = new Date(req.body.dates.end);
+
         var validRecords = logs.filter(item => (item.recordTime >= start && item.recordTime <= end))
         validRecords = validRecords.map((item) => {
             var recordTime = item.recordTime;
@@ -320,15 +378,17 @@ router.post('/fingureprintoffice/monthlyreport', async (req, res) => {
                 record: {
                     recordTime: recordTime,
                     date: date,
-                    time: time
+                    time: time,
+                    day:recordTime.getDay()
                 }
             }
         })
         var results = await calculateMonthlyAbsense(users, validRecords)
         res.status(200).json(results)
+
     } catch (e) {
-        console.log(e);
-        res.status(200).json(logs);
+        console.log(e.message);
+        res.status(400).json(e.message);
     }
 })
 
@@ -340,8 +400,8 @@ router.post('/fingureprintoffice/dailyreport', async (req, res) => {
         for (var d of req.body.devices) {
             logs = logs.concat(await getDeviceLogs(d.ip))
         }
-        var start = new Date(req.body.dates.start);
-        var end = new Date(req.body.dates.start);
+        var start = resetDate(req.body.dates.start);
+        var end = resetDate(req.body.dates.start);
         end.setDate(end.getDate() + 1);
         var validRecords = await logs.filter(item => (item.recordTime >= start && item.recordTime <= end))
         validRecords = validRecords.map((item) => {
@@ -353,7 +413,8 @@ router.post('/fingureprintoffice/dailyreport', async (req, res) => {
                 record: {
                     recordTime: recordTime,
                     date: date,
-                    time: time
+                    time: time,
+                    day:recordTime.getDay()
                 }
             }
         })
@@ -373,20 +434,25 @@ router.post('/fingureprintoffice/employeeReport', async (req, res) => {
         for (var d of req.body.devices) {
             logs = logs.concat(await getDeviceLogs(d.ip))
         }
-        var start = new Date(req.body.dates.start);
-        var end = new Date(req.body.dates.end);
+        var start = resetDate(req.body.dates.start);
+        var end = resetDate(req.body.dates.end);
+        if(req.body.dates.start==req.body.dates.end){
+            end.setDate(end.getDate()+1)
+        }
         var validRecords = logs.filter(item => item.deviceUserId==user.id)
         var validRecords = validRecords.filter(item => (item.recordTime >= start && item.recordTime <= end))
         validRecords = validRecords.map((item) => {
             var recordTime = item.recordTime;
             var date = recordTime.getFullYear() + "-" + (recordTime.getMonth() + 1) + "-" + recordTime.getDate();
             var time = recordTime.getHours() + ":" + recordTime.getMinutes() + ":" + recordTime.getSeconds();
+            var day=recordTime.getDay();
             return {
                 id: parseInt(item.deviceUserId),
                 record: {
                     recordTime: recordTime,
                     date: date,
-                    time: time
+                    time: time,
+                    day:day
                 }
             }
         })
@@ -401,10 +467,13 @@ router.post('/fingureprintoffice/employeeReport', async (req, res) => {
 router.post('/fingureprintoffice/timeoffReport', async (req, res) => {
     var results=[];
     try{
-        var startdate=req.body.startdate;
-        var enddate=req.body.enddate;
+        
+        var startdate=resetDate(req.body.startdate);
+        var enddate=resetDate(req.body.enddate);
+  
+        if(req.body.startdate==req.body.enddate) enddate.setDate(enddate.getDate() + 1);
         var users=await getEmployees();
-        var statement=`SELECT * From TimeOff where  Date(TimeOffDate) >= '${startdate}' AND Date(TimeOffDate)<= '${enddate}'`;
+        var statement=`SELECT * From TimeOff where  TimeOffDate >= '${startdate.toISOString()}' AND TimeOffDate<= '${enddate.toISOString()}'`;
         var EmployeesTimeOffs= await getAllTimeOffs(statement);
         for(var user of users){
             var userRecords=EmployeesTimeOffs.filter((item)=>item.EmployeeId==user.id);

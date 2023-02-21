@@ -1,4 +1,3 @@
-if (require('electron-squirrel-startup')) return;
 const {app, BrowserWindow,} = require('electron');
 const { on } = require('events');
 const path = require('path');
@@ -34,9 +33,8 @@ function createWindow () {
     // TODO: find out what the user is downloading and set options accordingly
     item.setSaveDialogOptions({
       filters: [
-
-        {name: "JSON", extensions: ["json"]},
         {name: "Data Base", extensions: ["db"]},
+        {name: "JSON", extensions: ["json"]},
         {name: "Excel File", extensions: ["xlsx"]},
         {name: 'All Files', extensions: ['*']}
       ],

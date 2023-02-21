@@ -1,27 +1,24 @@
 {
   "office": {
-    "name": "رئاسة جامعة ألموصل",
+    "name": "",
     "admin": "",
     "Departments": [
       {
         "name": "",
-        "units": [
-          {
-            "name": ""
-          }
-        ]
+        "units": []
       }
     ],
     "Devices": [
       {
-        "name": "جهاز 1",
-        "ip": "192.168.01.1",
+        "name": "جهاز1",
+        "ip": "192.168.1.201",
         "status": "no"
       }
     ],
     "TimePeriod": {
       "inTime": "08:30",
-      "outTime": "14:30"
+      "outTime": "14:30",
+      "ThuresDay": "13:30"
     }
   }
 }

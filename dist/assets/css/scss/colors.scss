@@ -41,3 +41,15 @@ $gray-17: #ecedf2;
 $gray-18: #333e484d;
 $white: #fff;
 $indigo: #2d1582;
+
+$standard-fontcolor:$dark;
+$active-standard-fontcolor:green;
+$lighten-standard-fontcolor:lighten($standard-fontcolor,10%);
+$card-bg-color:darken($light,5%);
+$layout-bg-color:#f8f9fa;
+$bg-color: #f1f3f3;
+
+
+$card-standard-color:#f8f9fa;
+$card-bg-color:#f8f9fa;
+$card-border-color: darken($card-standard-color, 5%);

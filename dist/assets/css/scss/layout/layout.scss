@@ -17,9 +17,9 @@ $bg-header:darken($light,2%);
     min-width: 292px;
     max-width: 292px;
 
-    background: $bg-header;
+    background: $layout-bg-color;
     border-left: 2px solid lighten(black,60%);
-    color:$fontcolor;
+    color:$standard-fontcolor;
     transition: all 0.5s cubic-bezier(0.945, 0.02, 0.27, 0.665);
     transform-origin: bottom right;
 
@@ -47,10 +47,14 @@ $bg-header:darken($light,2%);
                 font-size: 18px;
                 &:hover{
                     padding-right: 20px;
+                    color: $active-standard-fontcolor;
                 }
             }
             &:last-child{
                 border-bottom: 1px solid black;
+            }
+            &:first-child{
+                border-top:0px;
             }
         }
 
@@ -75,44 +79,34 @@ $bg-header:darken($light,2%);
 }
 .active{
     background:lighten($bg-color,5%);
+    color:$active-standard-fontcolor !important;
 }
-.page-header{
-    height:46px;
-    line-height: 45px;
-    width:100%;
-    color:$fontcolor;
-    background: $bg-header;
-    padding: 4px 10px;
-    border-bottom: 1px solid black;
-    button{
-        color:$fontcolor;
-        outline: 0;
-        padding: 0px;
-        i{
-            position: relative;
-            top:3px;
-        }
-    }
-}
+
 .section-header{
-    height:46px;
+    height:45px;
+    padding: 0px 10px;
+    margin-top:40px;
     line-height: 45px;
     width:100%;
-    background: $bg-header;
-    padding: 4px 10px;
-    border-bottom: 1px solid black;
+    background: $light !important;
+    display: flex;
+    justify-content: space-between;
+    border: 2px solid $card-border-color;
+    h4{
+        display: inline;
+        padding-top: 8px;
+        font-size:18px !important;
+    }
     button,.btn{
-        padding: 0px;
+        font-size: 18px;
         i{
             position: relative;
-            top:3px;
+            top: 2px;
         }
-        :hover{
-            color:$cyan;
+        &:hover{
+            color:$active-standard-fontcolor !important;
         }
-        :focus{
-            outline: none !important;
-        }
+        height: 35px;
     }
 
 }
